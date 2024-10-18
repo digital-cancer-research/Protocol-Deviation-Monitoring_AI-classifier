@@ -97,6 +97,7 @@ class QAPredictor:
                     dvcat_prediction_ids.flatten()
                 )
 
+
             dvdecod_chunk = [
                 f"{dvcat_pred}:{normalize_text(_input)}"
                 for dvcat_pred, _input in zip(
@@ -115,16 +116,30 @@ class QAPredictor:
                     dvdecod_predictions, dtype=np.float16
                 )
             else:
-                dvdecod_prediction_ids = np.argsort((-dvdecod_predictions), axis=1)[
-                    :, :num_predictions
-                ]
-                dvdecod_probabilities = dvdecod_predictions[
-                    np.expand_dims(np.arange(len(dvdecod_predictions)), axis=1),
-                    dvdecod_prediction_ids,
-                ]
-                dvdecod_predictions = self._dvdecod_encoder.inverse_transform(
-                    dvdecod_prediction_ids
-                )
+                evaluate_next = True
+                dvdecod_predictions_base_line=dvdecod_predictions
+                while evaluate_next:
+                    dvdecod_prediction_ids = np.argsort((-dvdecod_predictions), axis=1)[
+                                             :, :num_predictions
+                    ]
+                    dvdecod_probabilities = dvdecod_predictions[
+                        np.expand_dims(np.arange(len(dvdecod_predictions)), axis=1),
+                        dvdecod_prediction_ids,
+                    ]
+                    dvdecod_predictions = self._dvdecod_encoder.inverse_transform(
+                        dvdecod_prediction_ids
+                    )
+
+                    valid_predictions = [dvdecod_pred for dvcat_pred, dvdecod_pred in
+                                         zip(dvcat_predictions, dvdecod_predictions)
+                                         if dvdecod_pred in QAResponseCategory.LABEL_SPACE[dvcat_pred]]
+
+                    if valid_predictions:
+                        evaluate_next = False
+                    else:
+                        next_candidates = np.isin(dvdecod_predictions_base_line, dvdecod_prediction_ids.flatten(), invert=True)
+                        dvdecod_predictions_base_line = dvdecod_predictions_base_line[:, next_candidates]
+                        dvdecod_predictions = dvdecod_predictions_base_line
 
             chunk_predictions = [
                 {
