@@ -64,8 +64,6 @@ class QAPredictor:
         batch_size: int = 10,
         num_predictions: int = 1,
     ):
-        if num_predictions > 1:
-            return NotImplemented
 
         if isinstance(prediction_input, str):
             prediction_input = [prediction_input]
@@ -84,26 +82,25 @@ class QAPredictor:
                 dvcat_predictions = self._dvcat_encoder.inverse_transform(
                     dvcat_predictions
                 )
-                dvcat_probabilities = np.zeros_like(dvcat_predictions, dtype=np.float16)
+                dvcat_probabilities = (np.zeros_like(dvcat_predictions, dtype=np.float16)).flatten()
             else:
                 dvcat_prediction_ids = np.argsort((-dvcat_predictions), axis=1)[
                     :, :num_predictions
                 ]
-                dvcat_probabilities = dvcat_predictions[
+                dvcat_probabilities = (dvcat_predictions[
                     np.expand_dims(np.arange(len(dvcat_predictions)), axis=1),
                     dvcat_prediction_ids,
-                ]
+                ]).flatten()
                 dvcat_predictions = self._dvcat_encoder.inverse_transform(
                     dvcat_prediction_ids.flatten()
                 )
 
-
             dvdecod_chunk = [
-                f"{dvcat_pred}:{normalize_text(_input)}"
-                for dvcat_pred, _input in zip(
-                    dvcat_predictions, prediction_input[i : i + batch_size]
-                )
+                f"{dvcat_predictions[i * num_predictions + j]}:{normalize_text(_input)}"
+                for i, _input in enumerate(prediction_input)
+                for j in range(num_predictions)
             ]
+
             dvdecod_embeddings = self.encode(dvdecod_chunk)
             dvdecod_predictor = getattr(self._dvdecod_model, self._dvdecod_predict_name)
             dvdecod_predictions = dvdecod_predictor(dvdecod_embeddings)
@@ -112,34 +109,20 @@ class QAPredictor:
                 dvdecod_predictions = self._dvdecod_encoder.inverse_transform(
                     dvdecod_predictions
                 )
-                dvdecod_probabilities = np.zeros_like(
+                dvdecod_probabilities = (np.zeros_like(
                     dvdecod_predictions, dtype=np.float16
-                )
+                )).flatten()
             else:
-                evaluate_next = True
-                dvdecod_predictions_base_line=dvdecod_predictions
-                while evaluate_next:
-                    dvdecod_prediction_ids = np.argsort((-dvdecod_predictions), axis=1)[
-                                             :, :num_predictions
-                    ]
-                    dvdecod_probabilities = dvdecod_predictions[
-                        np.expand_dims(np.arange(len(dvdecod_predictions)), axis=1),
-                        dvdecod_prediction_ids,
-                    ]
-                    dvdecod_predictions = self._dvdecod_encoder.inverse_transform(
-                        dvdecod_prediction_ids
-                    )
+                dvdecod_prediction_ids = self.dvdecod_validator(dvdecod_predictions, dvcat_prediction_ids)
 
-                    valid_predictions = [dvdecod_pred for dvcat_pred, dvdecod_pred in
-                                         zip(dvcat_predictions, dvdecod_predictions)
-                                         if dvdecod_pred in QAResponseCategory.LABEL_SPACE[dvcat_pred]]
+                dvdecod_probabilities = (dvdecod_predictions[
+                    np.expand_dims(np.arange(len(dvdecod_predictions)), axis=1),
+                    dvdecod_prediction_ids,
+                ]).flatten()
 
-                    if valid_predictions:
-                        evaluate_next = False
-                    else:
-                        next_candidates = np.isin(dvdecod_predictions_base_line, dvdecod_prediction_ids.flatten(), invert=True)
-                        dvdecod_predictions_base_line = dvdecod_predictions_base_line[:, next_candidates]
-                        dvdecod_predictions = dvdecod_predictions_base_line
+                dvdecod_predictions = self._dvdecod_encoder.inverse_transform(
+                    dvdecod_prediction_ids
+                )
 
             chunk_predictions = [
                 {
@@ -156,17 +139,34 @@ class QAPredictor:
                 )
             ]
             predictions.extend(chunk_predictions)
+
         predictions = [
             QAResponse(
                 dvspondes=_inp,
                 categories=[
                     QAResponseCategory(
-                        dvcat=pred["dvcat"],
-                        dvdecod=pred["dvdecod"],
-                        probability=pred["dvcat_proba"],
+                        dvcat=predictions[i * num_predictions + j]["dvcat"],
+                        dvdecod=predictions[i * num_predictions + j]["dvdecod"],
+                        probability=predictions[i * num_predictions + j]["dvcat_proba"],
                     )
                 ],
             )
-            for _inp, pred in zip(prediction_input, predictions)
+            for i, _inp in enumerate(prediction_input)
+            for j in range(num_predictions)
         ]
         return predictions
+
+    def dvdecod_validator(self, dvdecod_predictions, dvcat_prediction_ids):
+        valid_dvdecodes = []
+        dvcat_prediction = dvcat_prediction_ids.flatten()
+        dvcat_labels = self._dvcat_encoder.inverse_transform(dvcat_prediction)
+
+        for i, preds in enumerate(dvdecod_predictions):
+            allowed_labels = QAResponseCategory.LABEL_SPACE[dvcat_labels[i]]
+
+            for j in np.argsort(-preds):
+                dvdecod_label = self._dvdecod_encoder.inverse_transform(np.array([j]))[0]
+                if dvdecod_label in allowed_labels:
+                    valid_dvdecodes.append([j])
+                    break
+        return valid_dvdecodes
