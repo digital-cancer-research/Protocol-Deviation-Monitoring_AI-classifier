@@ -50,9 +50,14 @@ def predict_protocol_deviation(
     """
     try:
         query = body["query"]
-        # num_predictions = body["num_predictions"] # NotImplemented yet
-        # qa_response = DVSMock.generate_categories(dvspondes=query, n=num_predictions)
-        qa_response = context.predictor.predict(query)
+        num_predictions = int(body.get("num_predictions", 1))
+        if num_predictions <= 0 or num_predictions > 64:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unprocessable request data: 'num_predictions' must be a positive integer "
+                       f"and less than or equal to 64, but received {body['num_predictions']}.",
+            )
+        qa_response = context.predictor.predict(query, num_predictions=num_predictions)
         return qa_response
     except KeyError as e:
         raise HTTPException(

@@ -149,10 +149,10 @@ class QAPredictor:
                         dvdecod=predictions[i * num_predictions + j]["dvdecod"],
                         probability=predictions[i * num_predictions + j]["dvcat_proba"],
                     )
+                    for j in range(num_predictions)
                 ],
             )
             for i, _inp in enumerate(prediction_input)
-            for j in range(num_predictions)
         ]
         return predictions
 
