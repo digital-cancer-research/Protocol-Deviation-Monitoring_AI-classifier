@@ -1,0 +1,29 @@
+FROM python:3.9.20-bullseye
+
+WORKDIR /Users/mromero/PycharmProjects/qa-ai
+
+# Install core dependencies.
+# RUN curl -y --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# RUN ls -la /
+# ENV PATH="$PATH:/home/root/.cargo/bin"
+
+# Get Rust; NOTE: using sh for better compatibility with other base images
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Add .cargo/bin to PATH
+#SHELL [ "/bin/sh", "-s", ".", "$HOME/.cargo/env" ]
+
+# Check cargo is visible
+#RUN cargo --help
+
+#COPY requirements.txt ./
+COPY . .
+#RUN . $HOME/.cargo/env && pip install --no-cache-dir -r requirements.txt
+RUN . $HOME/.cargo/env && pip install wheel &&  python -m pip install --upgrade pip  && pip install .
+
+COPY . .
+
+
+CMD [ "python", "./qaai/app.py" ]
+EXPOSE 8088/tcp
+
