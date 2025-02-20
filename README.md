@@ -36,13 +36,15 @@ If these parameters are not provided, the server will listen on the host's IP ad
 
 The service will continue running and will send messages to the console indicating its activity:
 
-`Starting application on 0.0.0.0:8088!`
-`INFO:     Started server process [5226]`
-`INFO:     Waiting for application startup.`
-`INFO:     Application startup complete.`
-`INFO:     Uvicorn running on http://0.0.0.0:8088 (Press CTRL+C to quit)`
-`INFO:     127.0.0.1:52985 - "POST /prediction HTTP/1.1" 200 OK`
-`INFO:     127.0.0.1:53569 - "POST /prediction HTTP/1.1" 200 OK`
+```
+Starting application on 0.0.0.0:8088!
+INFO:     Started server process [5226]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8088 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52985 - "POST /prediction HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53569 - "POST /prediction HTTP/1.1" 200 OK
+```
 
 The PD classifier will stop when the `CTRL+C` keys are pressed or when the operating system prompt returns to the user for any other reason. A message like the following may appear.
 
