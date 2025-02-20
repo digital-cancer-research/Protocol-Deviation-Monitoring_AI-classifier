@@ -1,12 +1,11 @@
 # qa-ai
 
 ## Requirements
-----------------------
+
 - Python 3.7+
 - pip
 
 ## Installation
-----------------------
 
 1) Download or clone the [*repository*](https://github.com/digital-cancer-research/qa-ai/tree/main) to your local machine. 
 2) In the base directory of the cloned repository, navigate to the `qa-ai` directory :
@@ -14,8 +13,8 @@
 3) Run the `pip` command with the parameters below:
 		`pip install .`
 		
-	> [!CAUTION]
-	>  Please note that the last character in the command is a period (.)
+> [!CAUTION]
+>  Please note that the last character in the command is a period (.)
   
   Once all dependencies are installed, the PD classifier is ready to use.
 
