@@ -24,8 +24,9 @@
 ## Startup
 
 To start the system, run the following command:
-
-`python pdai/app.py <listening_address> <listening_port>`
+```
+ python pdai/app.py <listening_address> <listening_port>
+```
 
 > [!Note]
 > Depending on your operating system (OS), it may be possible to integrate this command as an OS service. Requirements will vary based on the host server’s configuration.. 
