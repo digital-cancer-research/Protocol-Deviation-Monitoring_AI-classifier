@@ -19,7 +19,6 @@
   Once all dependencies are installed, the PD classifier is ready to use.
 
 ## Startup
---------------------
 
 To start the system, run the following command:
 
@@ -47,14 +46,15 @@ The service will continue running and will send messages to the console indicati
 
 The PD classifier will stop when the `CTRL+C` keys are pressed or when the operating system prompt returns to the user for any other reason. A message like the following may appear.
 
-`INFO:     Shutting down`
-`INFO:     Waiting for application shutdown.`
-`INFO:     Application shutdown complete.`
-`INFO:     Finished server process [5226]`
+```
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5226]
+```
 
 The status of the PD classifier can be monitored by checking the process number indicated in the line `INFO: Started server process [process_number]`, where the `process_number` corresponds to the identifier assigned to the server.
 
 ## Testing
--------------------
 
 To validate the service, you can send a query to the server as outlined in the [*user's guide*](QA-Programmer2_V1.md.md).
