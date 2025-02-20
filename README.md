@@ -9,7 +9,7 @@
 
 1) Download or clone the [*repository*](https://github.com/digital-cancer-research/qa-ai/tree/main) to your local machine. 
 2) In the base directory of the cloned repository, navigate to the `qa-ai` directory :
-		`cd qa-ai`  
+		`cd pdai`  
 3) Run the `pip` command with the parameters below:
 		`pip install .`
 		
