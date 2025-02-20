@@ -1,4 +1,4 @@
-# qa-ai
+# Protocol Deviation Monitoring - AI classifier
 
 ## Requirements
 
