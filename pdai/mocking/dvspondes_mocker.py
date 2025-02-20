@@ -1,7 +1,7 @@
 from typing import ClassVar, Dict
 import random
 
-from qaai.response import QAResponse, QAResponseCategory
+from pdai.response import QAResponse, QAResponseCategory
 
 
 class DVSMock:

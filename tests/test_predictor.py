@@ -1,6 +1,6 @@
 import pytest
 
-from qaai.prediction import QAPredictor
+from pdai.prediction import QAPredictor
 
 MODELS_FILE = "../models/models.joblib"
 

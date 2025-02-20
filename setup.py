@@ -3,7 +3,7 @@ import os
 
 from setuptools import find_packages
 from setuptools import setup
-from qaai import __VERSION__
+from pdai import __VERSION__
 
 if sys.version_info < (3, 9, 0):
     raise OSError(f"QA AI requires Python >=3.9, but yours is {sys.version}")

@@ -6,8 +6,8 @@ import joblib
 from typing import Union, List
 from spacy_sentence_bert.language import SentenceBert
 
-from qaai.response import QAResponse, QAResponseCategory
-from qaai.utils import normalize_text
+from pdai.response import QAResponse, QAResponseCategory
+from pdai.utils import normalize_text
 import numpy as np
 
 import warnings

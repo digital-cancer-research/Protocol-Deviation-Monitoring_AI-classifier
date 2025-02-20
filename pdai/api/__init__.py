@@ -5,8 +5,8 @@ from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from types import SimpleNamespace
 
-from qaai.prediction import QAPredictor
-from qaai.response import QAResponse
+from pdai.prediction import QAPredictor
+from pdai.response import QAResponse
 import os
 
 MODELS_FILE = os.path.join(os.path.dirname(__file__), "../../models/models.joblib")
