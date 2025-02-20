@@ -59,4 +59,4 @@ The status of the PD classifier can be monitored by checking the process number 
 
 ## Testing
 
-To validate the service, you can send a query to the server as outlined in the [*user's guide*](QA-Programmer2_V1.md.md).
+To validate the service, you can send a query to the server as outlined in the user's guide.
