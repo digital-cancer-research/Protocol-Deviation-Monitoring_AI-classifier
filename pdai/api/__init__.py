@@ -38,7 +38,6 @@ def read_root():
         detail="You seem to have lost your way. There is nothing here to see!",
     )
 
-
 @app.post("/prediction", response_model=List[QAResponse])
 def predict_protocol_deviation(
     body: dict = Body(...),
@@ -56,6 +55,8 @@ def predict_protocol_deviation(
                 status_code=400,
                 detail=f"Unprocessable request data: 'num_predictions' must be a positive integer "
                        f"and less than or equal to 64, but received {body['num_predictions']}.",
+                descriptions=(f"AI tool returned an error: {str(e)}"
+                              f"Request body: {body}"),
             )
         qa_response = context.predictor.predict(query, num_predictions=num_predictions)
         return qa_response
