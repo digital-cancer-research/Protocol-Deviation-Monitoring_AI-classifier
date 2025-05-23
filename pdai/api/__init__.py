@@ -62,12 +62,16 @@ def predict_protocol_deviation(
     except KeyError as e:
         raise HTTPException(
             status_code=400,
-            detail=f"Unprocessable request data {body}. "
+            detail=(f"Unprocessable request data {body}. "
                    f"Two fields expected: query[str] and num_predictions[int]. "
-                   f"Details: {str(e)}",
+                   f"Details: {str(e)}"),
+            descriptions=(f"AI tool returned an error: {str(e)}"
+                          f"Request body: {body}"),
         )
     except Exception as e:
         raise HTTPException(
             status_code=400,
             detail=f"Failed to obtain prediction for {body}. Details: {str(e)}",
+            descriptions=(f"AI tool returned an error: {str(e)}"
+                          f"Request body: {body}"),
         )
