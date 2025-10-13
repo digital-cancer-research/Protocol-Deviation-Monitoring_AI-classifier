@@ -64,7 +64,6 @@ class QAPredictor:
         batch_size: int = 10,
         num_predictions: int = 1,
     ):
-
         if isinstance(prediction_input, str):
             prediction_input = [prediction_input]
 
@@ -170,3 +169,47 @@ class QAPredictor:
                     valid_dvdecodes.append([j])
                     break
         return valid_dvdecodes
+
+    def codes(self,
+              dvcats_input: Union[str, List[str]]):
+
+        if isinstance(dvcats_input, str):
+            dvcats_input = [dvcats_input]
+
+        dvcategories_chunk =[]
+        dvcat_proba = (1 / len(dvcats_input))
+        for dvcat in dvcats_input:
+            allowed_labels = QAResponseCategory.LABEL_SPACE[dvcat]
+            dvdecod_proba = 1 / len(allowed_labels)
+            chunk_dvcategories = [
+                    {
+                        "dvcat": dvcat,
+                        "dvcat_proba": dvcat_proba,
+                        "dvdecod": dvdecod_pred,
+                        "dvdecod_proba": dvdecod_proba,
+                    }
+                    for dvdecod_pred in allowed_labels
+                ]
+            dvcategories_chunk.extend(chunk_dvcategories)
+
+        dvcategories = []
+        chunk_index = 0
+        for _inp in dvcats_input:
+            num_categories = len(QAResponseCategory.LABEL_SPACE[_inp])
+            dvcategories.append(
+                QAResponse(
+                    dvspondes=_inp,
+                    categories=[
+                        QAResponseCategory(
+                            dvcat=dvcategories_chunk[chunk_index + j]["dvcat"],
+                            dvdecod=dvcategories_chunk[chunk_index + j]["dvdecod"],
+                            probability=dvcategories_chunk[chunk_index + j]["dvcat_proba"],
+                        )
+                        for j in range(num_categories)
+                    ],
+                )
+            )
+
+            chunk_index += num_categories
+        print(dvcategories_chunk)
+        return dvcategories
