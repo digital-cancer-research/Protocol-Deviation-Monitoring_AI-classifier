@@ -9,10 +9,13 @@ from spacy_sentence_bert.language import SentenceBert
 from PDMAIC.pdai.response import QAResponse, QAResponseCategory
 from PDMAIC.pdai.utils import normalize_text
 import numpy as np
+from itertools import cycle, zip_longest
 
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
+
+
 
 class QAPredictor:
     def __init__(
@@ -171,45 +174,105 @@ class QAPredictor:
         return valid_dvdecodes
 
     def codes(self,
-              dvcats_input: Union[str, List[str]]):
+              dvcats_input: Union[str, List[str]],
+              prediction_input: Union[str, List[str]],
+              batch_size: int = 10,
+              num_predictions: int = 1):
 
         if isinstance(dvcats_input, str):
             dvcats_input = [dvcats_input]
 
-        dvcategories_chunk =[]
-        dvcat_proba = (1 / len(dvcats_input))
-        for dvcat in dvcats_input:
-            allowed_labels = QAResponseCategory.LABEL_SPACE[dvcat]
-            dvdecod_proba = 1 / len(allowed_labels)
-            chunk_dvcategories = [
+        if isinstance(prediction_input, str):
+            prediction_input = [prediction_input]
+
+        num_predictions = min(
+            num_predictions,
+            min(len(QAResponseCategory.LABEL_SPACE[dvcat]) for dvcat in dvcats_input)
+        )
+
+        predictions = []
+        dvcat_probabilities = [(1 / len(dvcats_input))] * len(dvcats_input)
+        for i in range(0, len(dvcats_input), batch_size):
+            batch = dvcats_input[i:i + batch_size]
+            batch_len = len(batch)
+            dvdecod_chunk = [
+                f"{dvcats_input[k * batch_size + m]}:{normalize_text(_input)}"
+                for k, _input in enumerate(prediction_input)
+                for m in range(batch_len)
+            ]
+
+            dvdecod_embeddings = self.encode(dvdecod_chunk)
+            dvdecod_predictor = getattr(self._dvdecod_model, self._dvdecod_predict_name)
+            dvdecod_predictions = dvdecod_predictor(dvdecod_embeddings)
+
+            if num_predictions == 0:
+                dvdecod_predictions = self._dvdecod_encoder.inverse_transform(
+                    dvdecod_predictions
+                )
+                dvdecod_probabilities = (np.zeros_like(
+                    dvdecod_predictions, dtype=np.float16
+                )).flatten()
+            else:
+                dvdecod_prediction_ids = self.dvdecod_validator_codes(dvdecod_predictions, dvcats_input)
+
+                dvdecod_probabilities = (dvdecod_predictions[
+                    np.expand_dims(np.arange(len(dvdecod_predictions)), axis=1),
+                    dvdecod_prediction_ids,
+                ]).flatten()
+
+                dvdecod_predictions = self._dvdecod_encoder.inverse_transform(
+                    dvdecod_prediction_ids
+                )
+
+                chunk_predictions = [
                     {
-                        "dvcat": dvcat,
+                        "dvcat": dvcat_pred,
                         "dvcat_proba": dvcat_proba,
                         "dvdecod": dvdecod_pred,
                         "dvdecod_proba": dvdecod_proba,
                     }
-                    for dvdecod_pred in allowed_labels
+                    for dvcat_pred, dvcat_proba, dvdecod_pred, dvdecod_proba in QAPredictor.zip_cycle(
+                        dvcats_input,
+                        dvcat_probabilities,
+                        dvdecod_predictions,
+                        dvdecod_probabilities,
+                    )
                 ]
-            dvcategories_chunk.extend(chunk_dvcategories)
+                predictions.extend(chunk_predictions)
 
-        dvcategories = []
-        chunk_index = 0
-        for _inp in dvcats_input:
-            num_categories = len(QAResponseCategory.LABEL_SPACE[_inp])
-            dvcategories.append(
+            predictions = [
                 QAResponse(
                     dvspondes=_inp,
                     categories=[
                         QAResponseCategory(
-                            dvcat=dvcategories_chunk[chunk_index + j]["dvcat"],
-                            dvdecod=dvcategories_chunk[chunk_index + j]["dvdecod"],
-                            probability=dvcategories_chunk[chunk_index + j]["dvcat_proba"],
+                            dvcat=pred["dvcat"],
+                            dvdecod=pred["dvdecod"],
+                            probability=pred["dvdecod_proba"],
                         )
-                        for j in range(num_categories)
-                    ],
+                    ]
                 )
-            )
+                for i, _inp in enumerate(prediction_input)
+                for j in range(num_predictions)
+                for pred in [predictions[i * num_predictions + j]]
+            ]
 
-            chunk_index += num_categories
-        print(dvcategories_chunk)
-        return dvcategories
+            return predictions
+
+    def dvdecod_validator_codes(self, dvdecod_predictions, dvcats):
+        valid_dvdecodes = []
+        dvcat_labels = dvcats
+
+        for i, preds in enumerate(dvdecod_predictions):
+            allowed_labels = QAResponseCategory.LABEL_SPACE[dvcat_labels[i]]
+
+            for j in np.argsort(-preds):
+                dvdecod_label = self._dvdecod_encoder.inverse_transform(np.array([j]))[0]
+                if dvdecod_label in allowed_labels:
+                    valid_dvdecodes.append([j])
+        return valid_dvdecodes
+
+    @staticmethod
+    def zip_cycle(*iterables, empty_default=None):
+        cycles = [cycle(i) for i in iterables]
+        for _ in zip_longest(*iterables):
+            yield tuple(next(i, empty_default) for i in cycles)
