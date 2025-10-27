@@ -279,18 +279,3 @@ class QAPredictor:
             valid_dvdecodes.append(valid_dvdecode)
 
         return np.array(valid_dvdecodes, dtype=object)
-
-    @staticmethod
-    def zip_cycle(*iterables, empty_default=None):
-        if not iterables:
-            return
-
-        iterables = [list(i) for i in iterables]  # Convert to lists
-        if not any(iterables):  # All empty
-            return
-
-        cycles = [cycle(i) if i else cycle([empty_default]) for i in iterables]
-        max_len = max(len(i) for i in iterables)
-
-        for _ in range(max_len):
-            yield tuple(next(c) for c in cycles)
