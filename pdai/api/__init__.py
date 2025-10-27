@@ -79,7 +79,7 @@ def predict_protocol_deviation(
 @app.post("/prediction/dvdecod", response_model=List[QAResponse])
 def protocol_deviation_code_list_per_category(body: dict = Body(...),):
     try:
-        dvcode = body["dvcode"]
+        dvcat = body["dvcat"]
         query = body["query"]
         num_predictions = int(body.get("num_predictions", 1))
         if num_predictions <= 0 or num_predictions > 64:
@@ -90,18 +90,18 @@ def protocol_deviation_code_list_per_category(body: dict = Body(...),):
                 headers= {"X-Error":f"AI tool returned an error: invalid or incorrectly formatted num_predictions value."
                               f"Request body: {body}"}
             )
-        qa_response = context.predictor.codes(dvcode, query, num_predictions=num_predictions)
+        qa_response = context.predictor.codes(dvcat, query, num_predictions=num_predictions)
         return qa_response
 
     except KeyError as e:
         raise HTTPException(
             status_code=400,
-            detail=f"Unprocessable request data {body}. \n One field expected: dvcode.",
+            detail=f"Unprocessable request data {body}. \n One field expected: dvcat.",
             headers= {"X-Error":f"AI tool returned an error: {str(e)} \n Request body: {body}"})
 
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail=f"Unprocessable request data {body}. \n One field expected: dvcode.",
+            detail=f"Unprocessable request data {body}. \n One field expected: dvcat.",
             headers= {"X-Error":f"AI tool returned an error: {str(e)} \n Request body: {body}"})
 

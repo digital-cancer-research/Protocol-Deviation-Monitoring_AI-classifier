@@ -1,5 +1,6 @@
 import os.path
 
+import numpy
 from sklearn.exceptions import InconsistentVersionWarning
 from sklearn.preprocessing import LabelEncoder
 import joblib
@@ -195,10 +196,11 @@ class QAPredictor:
         for i in range(0, len(dvcats_input), batch_size):
             batch = dvcats_input[i:i + batch_size]
             batch_len = len(batch)
+
             dvdecod_chunk = [
-                f"{dvcats_input[k * batch_size + m]}:{normalize_text(_input)}"
-                for k, _input in enumerate(prediction_input)
+                f"{batch[m]}:{normalize_text(prediction_input[i + m])}"
                 for m in range(batch_len)
+                if i + m < len(prediction_input)  # ensure we don't exceed prediction_input
             ]
 
             dvdecod_embeddings = self.encode(dvdecod_chunk)
@@ -215,14 +217,15 @@ class QAPredictor:
             else:
                 dvdecod_prediction_ids = self.dvdecod_validator_codes(dvdecod_predictions, dvcats_input)
 
-                dvdecod_probabilities = (dvdecod_predictions[
-                    np.expand_dims(np.arange(len(dvdecod_predictions)), axis=1),
-                    dvdecod_prediction_ids,
-                ]).flatten()
+                dvdecod_probabilities = [
+                    dvdecod_predictions[cat_ord, np.array(ids, dtype=int)]
+                    for cat_ord, ids in enumerate(dvdecod_prediction_ids)
+                ]
 
-                dvdecod_predictions = self._dvdecod_encoder.inverse_transform(
-                    dvdecod_prediction_ids
-                )
+                dvdecod_predictions = [
+                    self._dvdecod_encoder.inverse_transform(np.array(ids, dtype=int))
+                    for ids in dvdecod_prediction_ids
+                ]
 
                 chunk_predictions = [
                     {
@@ -231,12 +234,14 @@ class QAPredictor:
                         "dvdecod": dvdecod_pred,
                         "dvdecod_proba": dvdecod_proba,
                     }
-                    for dvcat_pred, dvcat_proba, dvdecod_pred, dvdecod_proba in QAPredictor.zip_cycle(
+                    for (dvcat_pred, dvcat_proba, dvdecod_preds, dvdecod_probas) in zip_longest(
                         dvcats_input,
                         dvcat_probabilities,
                         dvdecod_predictions,
                         dvdecod_probabilities,
+                        fillvalue=[]
                     )
+                    for dvdecod_pred, dvdecod_proba in zip(dvdecod_preds, dvdecod_probas)
                 ]
                 predictions.extend(chunk_predictions)
 
@@ -256,23 +261,36 @@ class QAPredictor:
                 for pred in [predictions[i * num_predictions + j]]
             ]
 
-            return predictions
+        return predictions
 
     def dvdecod_validator_codes(self, dvdecod_predictions, dvcats):
         valid_dvdecodes = []
         dvcat_labels = dvcats
 
-        for i, preds in enumerate(dvdecod_predictions):
-            allowed_labels = QAResponseCategory.LABEL_SPACE[dvcat_labels[i]]
+        for idx, preds in enumerate(dvdecod_predictions):
+            allowed_labels = QAResponseCategory.LABEL_SPACE[dvcat_labels[idx]]
+            valid_dvdecode = []
 
-            for j in np.argsort(-preds):
+            for j in np.argsort(-preds):  # Sort by confidence, highest first
                 dvdecod_label = self._dvdecod_encoder.inverse_transform(np.array([j]))[0]
                 if dvdecod_label in allowed_labels:
-                    valid_dvdecodes.append([j])
-        return valid_dvdecodes
+                    valid_dvdecode.append(j)
+
+            valid_dvdecodes.append(valid_dvdecode)
+
+        return np.array(valid_dvdecodes, dtype=object)
 
     @staticmethod
     def zip_cycle(*iterables, empty_default=None):
-        cycles = [cycle(i) for i in iterables]
-        for _ in zip_longest(*iterables):
-            yield tuple(next(i, empty_default) for i in cycles)
+        if not iterables:
+            return
+
+        iterables = [list(i) for i in iterables]  # Convert to lists
+        if not any(iterables):  # All empty
+            return
+
+        cycles = [cycle(i) if i else cycle([empty_default]) for i in iterables]
+        max_len = max(len(i) for i in iterables)
+
+        for _ in range(max_len):
+            yield tuple(next(c) for c in cycles)
