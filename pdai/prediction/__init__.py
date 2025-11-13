@@ -7,8 +7,8 @@ import joblib
 from typing import Union, List
 from spacy_sentence_bert.language import SentenceBert
 
-from PDMAIC.pdai.response import QAResponse, QAResponseCategory
-from PDMAIC.pdai.utils import normalize_text
+from response import QAResponse, QAResponseCategory
+from utils import normalize_text
 import numpy as np
 from itertools import cycle, zip_longest
 
