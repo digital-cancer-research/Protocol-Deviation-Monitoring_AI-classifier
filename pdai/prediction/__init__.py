@@ -10,7 +10,8 @@ from spacy_sentence_bert.language import SentenceBert
 from response import QAResponse, QAResponseCategory
 from utils import normalize_text
 import numpy as np
-from itertools import cycle, zip_longest
+from itertools import zip_longest
+from collections import defaultdict
 
 import warnings
 with warnings.catch_warnings():
@@ -244,6 +245,23 @@ class QAPredictor:
                     for dvdecod_pred, dvdecod_proba in zip(dvdecod_preds, dvdecod_probas)
                 ]
                 predictions.extend(chunk_predictions)
+
+            # Group by dvcat
+            groups = defaultdict(list)
+            for idx, item in enumerate(predictions):
+                groups[item["dvcat"]].append(idx)
+
+            # Apply softmax within each group
+            for dvcat, indices in groups.items():
+                # Extract probabilities for this group
+                proba_values = np.array([predictions[i]["dvdecod_proba"] for i in indices])
+
+                # Apply softmax
+                softmax_probs = np.exp(proba_values) / np.sum(np.exp(proba_values))
+
+                # Update the original list
+                for i, idx in enumerate(indices):
+                    predictions[idx]["dvdecod_proba"] = softmax_probs[i]
 
             predictions = [
                 QAResponse(
