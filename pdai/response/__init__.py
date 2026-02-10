@@ -85,7 +85,7 @@ class QAResponseCategory(BaseModel):
         ],
         "VISIT COMPLETION": [
             "MISSED VISIT/PHONE CONTACT",
-            "OUT OF WINDOW - VISIT/PHONE CONTACT",
+            "ASSESSMENT OR TIME POINT COMPLETION",
             "OTHER VISIT WINDOW DEVIATION",
             "UNCATEGORISED - VISIT COMPLETION",
         ],
