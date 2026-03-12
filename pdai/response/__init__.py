@@ -18,6 +18,7 @@ class QAResponseCategory(BaseModel):
             "OUT OF WINDOW - BLOODS LOCAL",
             "OUT OF WINDOW - BLOODS CENTRAL",
             "OUT OF WINDOW - OTHER",
+            "OUT OF WINDOW - VISIT/PHONE CONTACT",
             "MISSED ASSESSMENT - PK COLLECTION",
             "MISSED ASSESSMENT - TREATMENT ADMINISTRATION",
             "MISSED ASSESSMENT - BIOMARKER COLLECTION OR EXPLORATORY ASSESSMENT",
@@ -85,7 +86,6 @@ class QAResponseCategory(BaseModel):
         ],
         "VISIT COMPLETION": [
             "MISSED VISIT/PHONE CONTACT",
-            "OUT OF WINDOW - VISIT/PHONE CONTACT",
             "OTHER VISIT WINDOW DEVIATION",
             "UNCATEGORISED - VISIT COMPLETION",
         ],
